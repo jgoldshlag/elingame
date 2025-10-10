@@ -1,0 +1,67 @@
+var config = {
+    type: Phaser.AUTO, // Use WebGL if available, otherwise Canvas
+    width: 800,
+    height: 600,
+    physics: {
+        default: 'arcade', // Use the Arcade Physics engine
+        arcade: {
+            gravity: { y: 0 }, // No gravity in a top-down game
+            debug: false // Set to true for debugging physics
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+var player; //Variable for the player sprite
+var game = new Phaser.Game(config);
+
+function preload ()
+{
+    // Load assets (images, sounds, etc.)
+    this.load.image('player', 'assets/unicorn.png'); 
+    this.load.image('mermaid', 'assets/mermaid.png');
+}
+
+function create ()
+{
+    // Create game objects (player, enemies, etc.)
+    player = this.physics.add.sprite(100, 100, 'player'); //Add player at position (100, 100)
+    player.setCollideWorldBounds(true); //Prevent player from going off-screen
+}
+
+function update ()
+{
+    // Game logic (movement, collisions, etc.)
+    const cursors = this.input.keyboard.createCursorKeys();
+
+    if (cursors.left.isDown)
+    {
+        player.setVelocityX(-160);
+    }
+    else if (cursors.right.isDown)
+    {
+        player.setVelocityX(160);
+        
+    }
+    else
+    {
+        player.setVelocityX(0);
+    }
+
+    if (cursors.up.isDown)
+    {
+        player.setVelocityY(-160);
+    }
+    else if (cursors.down.isDown)
+    {
+        player.setVelocityY(160);
+    }
+    else
+    {
+        player.setVelocityY(0);
+    }
+}
