@@ -24,11 +24,15 @@ function preload ()
     // Load assets (images, sounds, etc.)
     this.load.image('player', 'assets/unicorn.png'); 
     this.load.image('mermaid', 'assets/mermaid.png');
+    this.load.image('classroom', 'assets/classroom.jpeg');
 }
 
 function create ()
 {
     // Create game objects (player, enemies, etc.)
+    // Create the background image
+    this.add.image(0, 0, 'classroom').setOrigin(0, 0);
+
     player = this.physics.add.sprite(100, 100, 'player'); //Add player at position (100, 100)
     player.setCollideWorldBounds(true); //Prevent player from going off-screen
 }
