@@ -35,7 +35,7 @@ function create ()
 
     player = this.physics.add.sprite(100, 100, 'player'); //Add player at position (100, 100)
     player.setCollideWorldBounds(true); //Prevent player from going off-screen
-    player.setScale(0.5);
+    player.setScale(2);
 }
 
 function update ()
