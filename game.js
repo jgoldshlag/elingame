@@ -2,8 +2,12 @@ import Phaser from 'phaser';
 
 var config = {
     type: Phaser.AUTO, // Use WebGL if available, otherwise Canvas
-    width: 1024,
-    height: 1024,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 1024,
+        height: 768
+    },
     physics: {
         default: 'arcade', // Use the Arcade Physics engine
         arcade: {
@@ -73,9 +77,9 @@ function create ()
 
     // --- Create Inventory Display ---
     const inventoryBg = this.add.graphics();
-    inventoryBg.fillStyle(0x000000, 0.5); // Black with 50% opacity
-    // Positioned at the bottom of the screen
-    inventoryBg.fillRect(300, this.cameras.main.height - 100, this.cameras.main.width - 400, 100);
+    inventoryBg.fillStyle(0xadd8e6, 0.5); // Light blue with 50% opacity
+    // Positioned at the bottom center of the screen
+    inventoryBg.fillRect(this.cameras.main.width / 2 - 200, this.cameras.main.height - 80, 400, 60);
     inventoryBg.setScrollFactor(0); // Fix to camera
 
     // A group to hold the sprites of items in our inventory
@@ -104,11 +108,11 @@ function create ()
         return button;
     };
 
-    const upButton = createButton(120, this.cameras.main.height - 180, '▲');
-    const downButton = createButton(120, this.cameras.main.height - 80, '▼');
-    const leftButton = createButton(40, this.cameras.main.height - 130, '◀');
-    const rightButton = createButton(200, this.cameras.main.height - 130, '▶');
-    const switchButton = createButton(this.cameras.main.width - 200, this.cameras.main.height - 80, 'Switch');
+    const upButton = createButton(100, this.cameras.main.height - 150, '▲');
+    const downButton = createButton(100, this.cameras.main.height - 70, '▼');
+    const leftButton = createButton(30, this.cameras.main.height - 110, '◀');
+    const rightButton = createButton(170, this.cameras.main.height - 110, '▶');
+    const switchButton = createButton(this.cameras.main.width - 150, this.cameras.main.height - 70, 'Switch');
 
     // --- Add character switch logic ---
     switchButton.on('pointerdown', () => {
@@ -147,7 +151,7 @@ function updateInventoryDisplay() {
 
     // Loop through our inventory array and display each item
     inventory.forEach((itemKey, index) => {
-        const x = 360 + (index * 80); // Position items horizontally
+        const x = (this.cameras.main.width / 2 - 200) + 40 + (index * 70); // Position items horizontally
         const y = this.cameras.main.height - 50; // Center vertically in the inventory bar
         const itemSprite = this.add.sprite(x, y, itemKey).setScrollFactor(0);
         inventoryGroup.add(itemSprite);
