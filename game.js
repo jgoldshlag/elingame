@@ -36,6 +36,25 @@ function create ()
     player = this.physics.add.sprite(100, 100, 'player'); //Add player at position (100, 100)
     player.setCollideWorldBounds(true); //Prevent player from going off-screen
     player.setScale(2);
+
+    // Enable dragging
+    player.setInteractive();
+    this.input.setDraggable(player);
+
+    this.input.on('dragstart', function (pointer, gameObject) {
+        gameObject.setVelocity(0,0);
+    });
+
+    this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
+
+        gameObject.x = dragX;
+        gameObject.y = dragY;
+
+    });
+
+    this.input.on('dragend', function (pointer, gameObject) {
+       
+    });
 }
 
 function update ()
