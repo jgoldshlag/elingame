@@ -35,6 +35,7 @@ function create ()
 
     player = this.physics.add.sprite(100, 100, 'player'); //Add player at position (100, 100)
     player.setCollideWorldBounds(true); //Prevent player from going off-screen
+    player.setScale(0.5);
 }
 
 function update ()
@@ -44,11 +45,11 @@ function update ()
 
     if (cursors.left.isDown)
     {
-        player.setVelocityX(-160);
+        player.setVelocityX(-320);
     }
     else if (cursors.right.isDown)
     {
-        player.setVelocityX(160);
+        player.setVelocityX(320);
         
     }
     else
@@ -58,11 +59,11 @@ function update ()
 
     if (cursors.up.isDown)
     {
-        player.setVelocityY(-160);
+        player.setVelocityY(-320);
     }
     else if (cursors.down.isDown)
     {
-        player.setVelocityY(160);
+        player.setVelocityY(320);
     }
     else
     {
