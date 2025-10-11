@@ -1,7 +1,7 @@
 var config = {
     type: Phaser.AUTO, // Use WebGL if available, otherwise Canvas
-    width: 800,
-    height: 600,
+    width: 1024,
+    height: 1024,
     physics: {
         default: 'arcade', // Use the Arcade Physics engine
         arcade: {
