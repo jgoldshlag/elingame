@@ -6,7 +6,7 @@ var config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: 1024,
-        height: 768
+        height: 1024
     },
     physics: {
         default: 'arcade', // Use the Arcade Physics engine
@@ -213,8 +213,8 @@ function update ()
             // Spawn the sparkle in a random location
             let randomX, randomY;
             do {
-                randomX = Phaser.Math.Between(50, config.width - 50);
-                randomY = Phaser.Math.Between(50, config.height - 50);
+                randomX = Phaser.Math.Between(50, this.cameras.main.width - 50);
+                randomY = Phaser.Math.Between(50, this.cameras.main.height - 50);
             } while (Phaser.Math.Distance.Between(randomX, randomY, missionGiver.x, missionGiver.y) < 300); // Ensure it's far away
 
             sparkle.enableBody(true, randomX, randomY, true, true);
