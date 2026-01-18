@@ -25,12 +25,17 @@ var config = {
 var player; //Variable for the player sprite
 var cursors; // Variable for keyboard controls
 var missionGiver; // The unicorn who gives missions
+var teacher; // The teacher NPC
+var lunchLady; // The lunch lady NPC
 var missionText; // The text for the mission dialogue
 var sparkle; // The collectible item for the mission
 var missionComplete = false; // A flag to track mission status
 var missionAccepted = false; // A flag to track if the mission has been given
 var inventory = []; // An array to hold the keys of collected items
 var inventoryGroup; // A group to display the inventory items
+var background; // Variable for the background image
+var location = "classroom";
+var foodGroup; // Group for food items
 var game = new Phaser.Game(config);
 
 function preload ()
@@ -38,8 +43,16 @@ function preload ()
     // Load assets (images, sounds, etc.)
     this.load.image('unicorn', 'assets/unicorn.png'); 
     this.load.image('mermaid', 'assets/mermaid.png');
+    this.load.image('lunch_lady', 'assets/lunch_lady.png');
     this.load.image('classroom', 'assets/classroom.jpeg');
+    this.load.image('cafeteria', 'assets/cafeteria.png');
     this.load.image('sparkle', 'assets/sparkle.png');
+    this.load.image('fries', 'assets/fries.png');
+    this.load.image('hamburger', 'assets/hamburger.png');
+    this.load.image('hotdog', 'assets/hotdog.png');
+    this.load.image('taco', 'assets/taco.png');
+    this.load.image('chocolate_milkshake', 'assets/chocolate_milkshake.png');
+    this.load.image('sprite', 'assets/sprite.png');
     this.load.audio('collectSound', 'assets/collect.mp3');
 }
 
@@ -47,7 +60,7 @@ function create ()
 {
     // Create game objects (player, enemies, etc.)
     // Create the background image
-    this.add.image(0, 0, 'classroom').setOrigin(0, 0);
+    background = this.add.image(0, 0, 'classroom').setOrigin(0, 0);
 
     player = this.physics.add.sprite(100, 100, 'unicorn'); //Add player at position (100, 100)
     player.setCollideWorldBounds(true); //Prevent player from going off-screen
@@ -55,13 +68,27 @@ function create ()
     player.movementFlags = { up: false, down: false, left: false, right: false };
 
     // --- Create the Mission Giver NPC ---
-    missionGiver = this.physics.add.sprite(800, 250, 'unicorn');
+    missionGiver = this.physics.add.sprite(875, 480, 'unicorn');
     missionGiver.setScale(2);
     missionGiver.setImmovable(true); // The player can't push the NPC
     missionGiver.setTint(0xaaaaff); // Tint the NPC blue to look different
 
     // Add collision between player and the mission giver
     this.physics.add.collider(player, missionGiver);
+
+    // --- Create the Teacher NPC ---
+    teacher = this.physics.add.sprite(520, 300, 'mermaid');
+    teacher.setScale(2);
+    teacher.setImmovable(true);
+    this.physics.add.collider(player, teacher);
+
+    // --- Create the Lunch Lady NPC ---
+    lunchLady = this.physics.add.sprite(1150, 400, 'lunch_lady');
+    lunchLady.setScale(2);
+    lunchLady.setImmovable(true);
+    lunchLady.setVisible(false);
+    lunchLady.body.enable = false;
+    this.physics.add.collider(player, lunchLady);
 
     // --- Create the Dialogue Text ---
     missionText = this.add.text(0, 0, 'Hi Elin! Can you find my lost sparkle?', {
@@ -84,6 +111,9 @@ function create ()
 
     // A group to hold the sprites of items in our inventory
     inventoryGroup = this.add.group();
+
+    // --- Create Food Group ---
+    foodGroup = this.physics.add.group();
 
 
     // Make the camera follow the player
@@ -112,17 +142,6 @@ function create ()
     const downButton = createButton(100, this.cameras.main.height - 70, '▼');
     const leftButton = createButton(30, this.cameras.main.height - 110, '◀');
     const rightButton = createButton(170, this.cameras.main.height - 110, '▶');
-    const switchButton = createButton(this.cameras.main.width - 150, this.cameras.main.height - 70, 'Switch');
-
-    // --- Add character switch logic ---
-    switchButton.on('pointerdown', () => {
-        // Check the current texture key and switch to the other one
-        if (player.texture.key === 'unicorn') {
-            player.setTexture('mermaid');
-        } else {
-            player.setTexture('unicorn');
-        }
-    });
 
     // Add button event listeners
     upButton.on('pointerdown', () => player.movementFlags.up = true);
@@ -171,6 +190,14 @@ function collectSparkle(player, sparkle)
     this.sound.play('collectSound');
 }
 
+function collectFood(player, foodItem)
+{
+    foodItem.disableBody(true, true);
+    inventory.push(foodItem.texture.key);
+    updateInventoryDisplay.call(this);
+    this.sound.play('collectSound');
+}
+
 function update ()
 {
     // Game logic (movement, collisions, etc.)
@@ -197,34 +224,108 @@ function update ()
 
     // --- NPC Interaction Logic ---
     // Calculate the distance between the player and the mission giver
-    const distance = Phaser.Math.Distance.Between(player.x, player.y, missionGiver.x, missionGiver.y);
+    if (location === "classroom")
+    {
+        const distance = Phaser.Math.Distance.Between(player.x, player.y, missionGiver.x, missionGiver.y);
 
-    if (distance < 150) {
-        // --- Handle Mission Dialogue and State ---
-        if (missionComplete) {
-            missionText.setText('You found it! Thank you so much!');
-        } else if (missionAccepted) {
-            missionText.setText('Have you found my sparkle yet?');
+        if (distance < 150) {
+            // --- Handle Mission Dialogue and State ---
+            if (missionComplete) {
+                missionText.setText('You found it! Thank you so much!');
+
+                // Remove sparkle from inventory if present
+                const itemIndex = inventory.indexOf('sparkle');
+                if (itemIndex > -1) {
+                    inventory.splice(itemIndex, 1);
+                    updateInventoryDisplay.call(this);
+
+                    // Teacher speaks
+                    const teacherText = this.add.text(teacher.x, teacher.y - 50, 'It is lunch time!', {
+                        fontSize: '24px', fill: '#000', backgroundColor: 'rgba(255,255,255,0.8)', padding: { x: 15, y: 10 }, borderRadius: 10
+                    }).setOrigin(0.5, 1);
+
+                    let timeLeft = 5;
+                    const countdownText = this.add.text(teacher.x, teacher.y - 100, timeLeft, {
+                        fontSize: '96px', fill: '#fff', stroke: '#000', strokeThickness: 6
+                    }).setOrigin(0.5).setScrollFactor(0);
+
+                    // Countdown timer
+                    this.time.addEvent({
+                        delay: 1000,
+                        callback: () => {
+                            timeLeft--;
+                            if (timeLeft > 0) {
+                                countdownText.setText(timeLeft);
+                            } else {
+                                countdownText.destroy();
+                                background.setTexture('cafeteria');
+                                player.setPosition(100, 100);
+                                teacherText.destroy();
+                                teacher.setVisible(false);
+                                teacher.body.enable = false;
+                                lunchLady.setVisible(true);
+                                lunchLady.body.enable = true;
+                                location = "cafeteria";
+                                missionText.setVisible(false);
+                                missionGiver.x = 350;
+                                missionGiver.y = 390;
+
+                                const foodItems = ['fries', 'hotdog', 'hamburger', 'taco', 'chocolate_milkshake', 'sprite'];
+                                let foodY = 20;
+                                foodItems.forEach(item => {
+                                    const foodItem = foodGroup.create(300, foodY, item);
+                                    foodItem.setInteractive();
+                                    foodItem.on('pointerdown', () => {
+                                        if (Phaser.Math.Distance.Between(player.x, player.y, foodItem.x, foodItem.y) < 150) {
+                                            collectFood.call(this, player, foodItem);
+                                        }
+                                    });
+                                    foodY += 100;
+                                });
+
+                                this.add.text(600, 100, [
+                                    'MENU',
+                                    'Hamburgers',
+                                    'Hot Dogs',
+                                    'Tacos',
+                                    'French Fries',
+                                    'Chocolate Milk Shake',
+                                    'Sprite'
+                                ], { 
+                                    fontSize: '32px', 
+                                    fill: '#fff', 
+                                    backgroundColor: '#333',
+                                    padding: { x: 20, y: 20 },
+                                    align: 'left'
+                                }).setScrollFactor(0);
+                            }
+                        },
+                        repeat: 4
+                    });
+                }
+            } else if (missionAccepted) {
+                missionText.setText('Have you found my sparkle yet?');
+            } else {
+                // This is the first time the player gets the mission
+                missionText.setText('Hi Elin! Can you find my lost sparkle?');
+                missionAccepted = true;
+
+                // Spawn the sparkle in a random location
+                let randomX, randomY;
+                do {
+                    randomX = Phaser.Math.Between(50, this.cameras.main.width - 50);
+                    randomY = Phaser.Math.Between(50, this.cameras.main.height - 50);
+                } while (Phaser.Math.Distance.Between(randomX, randomY, missionGiver.x, missionGiver.y) < 300); // Ensure it's far away
+
+                sparkle.enableBody(true, randomX, randomY, true, true);
+            }
+
+            missionText.x = missionGiver.x;
+            missionText.y = missionGiver.y - 120; // Position text above the NPC's head
+            missionText.setVisible(true);
         } else {
-            // This is the first time the player gets the mission
-            missionText.setText('Hi Elin! Can you find my lost sparkle?');
-            missionAccepted = true;
-
-            // Spawn the sparkle in a random location
-            let randomX, randomY;
-            do {
-                randomX = Phaser.Math.Between(50, this.cameras.main.width - 50);
-                randomY = Phaser.Math.Between(50, this.cameras.main.height - 50);
-            } while (Phaser.Math.Distance.Between(randomX, randomY, missionGiver.x, missionGiver.y) < 300); // Ensure it's far away
-
-            sparkle.enableBody(true, randomX, randomY, true, true);
+            // If far, hide the text
+            missionText.setVisible(false);
         }
-
-        missionText.x = missionGiver.x;
-        missionText.y = missionGiver.y - 120; // Position text above the NPC's head
-        missionText.setVisible(true);
-    } else {
-        // If far, hide the text
-        missionText.setVisible(false);
     }
 }
