@@ -37,6 +37,8 @@ var background; // Variable for the background image
 var location = "classroom";
 var foodGroup; // Group for food items
 var game = new Phaser.Game(config);
+var trayY = 416;
+var itemMenu; // Variable for the inventory item interaction menu
 
 function preload ()
 {
@@ -167,13 +169,94 @@ function create ()
 function updateInventoryDisplay() {
     // `this` will be the scene context
     inventoryGroup.clear(true, true); // Remove all old items from the display
+    if (itemMenu) {
+        itemMenu.destroy();
+        itemMenu = null;
+    }
 
     // Loop through our inventory array and display each item
     inventory.forEach((itemKey, index) => {
         const x = (this.cameras.main.width / 2 - 200) + 40 + (index * 70); // Position items horizontally
         const y = this.cameras.main.height - 50; // Center vertically in the inventory bar
         const itemSprite = this.add.sprite(x, y, itemKey).setScrollFactor(0);
+        
+        itemSprite.setInteractive();
+        if (itemKey !== 'sparkle')
+        {
+            itemSprite.on('pointerdown', () => {
+                showItemMenu.call(this, itemKey, index, x, y);
+            });
+        }
+
         inventoryGroup.add(itemSprite);
+    });
+}
+
+function showItemMenu(itemKey, index, x, y) {
+    if (itemMenu) itemMenu.destroy();
+    const scene = this;
+
+    // Create container with a high depth to ensure it's on top of all UI
+    itemMenu = this.add.container(x, y - 100).setScrollFactor(0).setDepth(2000);
+
+    // Background graphic
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.9);
+    bg.lineStyle(2, 0xffffff, 1);
+    bg.fillRoundedRect(-75, -65, 150, 130, 10);
+    bg.strokeRoundedRect(-75, -65, 150, 130, 10);
+    itemMenu.add(bg);
+
+    // Create Rectangles for buttons to provide a solid, reliable hit area
+    const eatBtn = this.add.rectangle(0, -30, 130, 50, 0x444444).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    const eatText = this.add.text(0, -30, 'Eat', { fontSize: '24px', fill: '#ffffff' }).setOrigin(0.5);
+
+    const dropBtn = this.add.rectangle(0, 30, 130, 50, 0x444444).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    const dropText = this.add.text(0, 30, 'Drop', { fontSize: '24px', fill: '#ffffff' }).setOrigin(0.5);
+
+    itemMenu.add([eatBtn, eatText, dropBtn, dropText]);
+
+    // Add hover effects for visual feedback
+    eatBtn.on('pointerover', () => eatBtn.setFillStyle(0x666666));
+    eatBtn.on('pointerout', () => eatBtn.setFillStyle(0x444444));
+    dropBtn.on('pointerover', () => dropBtn.setFillStyle(0x666666));
+    dropBtn.on('pointerout', () => dropBtn.setFillStyle(0x444444));
+
+    eatBtn.on('pointerdown', (pointer, localX, localY, event) => {
+        if (event) event.stopPropagation();
+        if (itemMenu) {
+            itemMenu.destroy();
+            itemMenu = null;
+        }
+        inventory.splice(index, 1);
+        updateInventoryDisplay.call(scene);
+    });
+
+    dropBtn.on('pointerdown', (pointer, localX, localY, event) => {
+        if (event) event.stopPropagation();
+        // Drop slightly in front of the player so they don't pick it up instantly
+        const dropX = player.x + (player.flipX ? 50 : -50);
+        const dropY = player.y + 20;
+
+        if (itemKey === 'sparkle') {
+            sparkle.enableBody(true, dropX, dropY, true, true);
+            missionComplete = false;
+        } else {
+            const droppedItem = foodGroup.create(dropX, dropY, itemKey);
+            droppedItem.setInteractive();
+            droppedItem.on('pointerdown', () => {
+                if (Phaser.Math.Distance.Between(player.x, player.y, droppedItem.x, droppedItem.y) < 150) {
+                    collectFood.call(scene, player, droppedItem);
+                }
+            });
+        }
+
+        if (itemMenu) {
+            itemMenu.destroy();
+            itemMenu = null;
+        }
+        inventory.splice(index, 1);
+        updateInventoryDisplay.call(scene);
     });
 }
 
@@ -275,6 +358,7 @@ function update ()
                                 foodItems.forEach(item => {
                                     const foodItem = foodGroup.create(300, foodY, item);
                                     foodItem.setInteractive();
+                                    foodItem.setVisible(false);
                                     foodItem.on('pointerdown', () => {
                                         if (Phaser.Math.Distance.Between(player.x, player.y, foodItem.x, foodItem.y) < 150) {
                                             collectFood.call(this, player, foodItem);
@@ -283,21 +367,40 @@ function update ()
                                     foodY += 100;
                                 });
 
-                                this.add.text(600, 100, [
-                                    'MENU',
-                                    'Hamburgers',
-                                    'Hot Dogs',
-                                    'Tacos',
-                                    'French Fries',
-                                    'Chocolate Milk Shake',
-                                    'Sprite'
-                                ], { 
-                                    fontSize: '32px', 
-                                    fill: '#fff', 
-                                    backgroundColor: '#333',
-                                    padding: { x: 20, y: 20 },
-                                    align: 'left'
-                                }).setScrollFactor(0);
+                                // Create Interactive Menu
+                                this.add.text(600, 40, 'MENU', { fontSize: '40px', fill: '#ff0' }).setScrollFactor(0);
+                                
+                                const menuItems = [
+                                    { name: 'Hamburgers', key: 'hamburger' },
+                                    { name: 'Hot Dogs', key: 'hotdog' },
+                                    { name: 'Tacos', key: 'taco' },
+                                    { name: 'French Fries', key: 'fries' },
+                                    { name: 'Chocolate Milk Shake', key: 'chocolate_milkshake' },
+                                    { name: 'Sprite', key: 'sprite' }
+                                ];
+
+                                let menuY = 100;
+                                menuItems.forEach(item => {
+                                    const menuText = this.add.text(600, menuY, item.name, { 
+                                        fontSize: '28px', 
+                                        fill: '#fff', 
+                                        backgroundColor: '#333',
+                                        padding: { x: 10, y: 5 }
+                                    }).setInteractive().setScrollFactor(0);
+
+                                    menuText.on('pointerdown', () => {
+                                        // Find the food sprite and move it to the tray
+                                        const foodSprite = foodGroup.getChildren().find(f => f.texture.key === item.key);
+                                        if (foodSprite) 
+                                        {
+                                            foodSprite.setPosition(470, trayY);
+                                            trayY += 10;
+                                            foodSprite.setVisible(true);
+                                            menuText.destroy();
+                                        }
+                                    });
+                                    menuY += 50;
+                                });
                             }
                         },
                         repeat: 4
